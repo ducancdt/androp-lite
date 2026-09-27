@@ -1,0 +1,13 @@
+{
+  "product_name": "ANDrop Lite",
+  "version": "0.1.0-alpha",
+  "build_profile": "release",
+  "build_date": "2026-09-27",
+  "target_triple": "x86_64-pc-windows-msvc",
+  "host_os": "Microsoft Windows NT 10.0.26200.0 (Win32NT 64-bit)",
+  "compiler": "rustc 1.95.0",
+  "package_type": "portable_zip",
+  "administrator_required": false,
+  "background_service": false,
+  "autostart_registry": false
+}
