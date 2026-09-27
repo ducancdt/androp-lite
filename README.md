@@ -1,88 +1,43 @@
-# ANDrop Lite (Windows x64)
+# ANDrop Lite v0.1.1-alpha — Windows x64
 
-> **Ultra-fast, lightweight peer-to-peer file transfer for Windows — Zero-cloud, mTLS-secured, privacy-first.**
+Bản alpha mới cho chat và gửi file qua LAN/Tailscale. Chưa ký số; chưa nghiệm thu trên hai máy thật hoặc máy Windows sạch. Hai máy cần chạy cùng bản này.
 
-[![Release](https://img.shields.io/github/v/release/ducancdt/androp-lite?include_prereleases&style=flat-square)](https://github.com/ducancdt/androp-lite/releases)
-[![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011%20x64-blue?style=flat-square)](https://github.com/ducancdt/androp-lite)
-[![Architecture](https://img.shields.io/badge/arch-x86__64-orange?style=flat-square)](https://github.com/ducancdt/androp-lite)
-[![Language](https://img.shields.io/badge/built%20with-Rust%20%2B%20egui-lightgrey?style=flat-square)](https://github.com/ducancdt/androp-lite)
+## Tải về
 
-ANDrop Lite là giải pháp truyền nhận dữ liệu ngang hàng nội bộ (LAN và Tailscale) được tối ưu hóa chuyên sâu cho hệ điều hành Windows (Windows 10 và Windows 11 64-bit). Ứng dụng mang đến trải nghiệm chia sẻ tệp tốc độ cao mà không phụ thuộc vào bất kỳ máy chủ đám mây (cloud) trung gian nào.
+- [ZIP đầy đủ](https://github.com/ducancdt/androp-lite/releases/download/v0.1.1-alpha/androp-lite-windows-x64-v0.1.1-alpha.zip)
+- [EXE](https://github.com/ducancdt/androp-lite/releases/download/v0.1.1-alpha/androp-desktop.exe)
+- [SHA-256](https://github.com/ducancdt/androp-lite/releases/download/v0.1.1-alpha/SHA256SUMS.txt)
+- [Release notes](https://github.com/ducancdt/androp-lite/releases/tag/v0.1.1-alpha)
 
----
+## Thay đổi
 
-## 🌟 Điểm nổi bật (Key Features)
+- Ghép nối và màn hình duyệt dùng chung trạng thái; hỗ trợ endpoint/cổng gọi ngược từ lời mời.
+- LAN/Tailscale dùng cùng runtime TLS 1.3, pin chứng chỉ và token riêng từng peer. Không cần server ANDrop trung tâm.
+- Chat báo máy kia đã nhận sau ACK; retry có chống trùng.
+- Nhận file cần chấp thuận, truyền theo checkpoint, kiểm SHA-256 và lưu không ghi đè. Xác minh chạy riêng để control/chat tiếp tục phản hồi.
+- Sửa mất ACK/status, báo pending khi mạng tắt, cuộn tới phần duyệt và đóng cửa sổ.
+- Thu hồi peer hủy target gửi cũ và tác vụ nhận ở điểm an toàn; lỗi lưu quyền không báo thành công.
 
-- 🔒 **Bảo mật tuyệt đối (mTLS Encrypted)**: Mã hóa kênh truyền đầu cuối bằng TLS 1.3 với cơ chế ghim chứng chỉ số (Certificate Pinning) và xác thực ghép đôi PIN một lần, chống hoàn toàn nghe lén và tấn công Man-in-the-Middle (MitM).
-- 🚀 **Tốc độ cao & Tiết kiệm tài nguyên**: Viết hoàn toàn bằng Rust gốc với giao diện `egui` (glow renderer). CPU khi nghỉ xấp xỉ 0.00%, bộ nhớ RAM dưới 100 MB, dung lượng tệp thực thi siêu gọn (~5.2 MB).
-- 📦 **Khả chuyển (Portable - No Installer)**: Không cần cài đặt rườm rà, chạy trực tiếp dưới quyền người dùng thông thường (Standard User / Non-Admin). Không can thiệp Registry hay file hệ thống.
-- 🛡️ **Tôn trọng quyền riêng tư (Zero-Telemetry & Safe)**:
-  - Tuyệt đối không thu thập logs, dữ liệu cá nhân hay gửi telemetry ra Internet.
-  - Không cài đặt Windows Service ngầm (No background service).
-  - Không tự ý đăng ký khởi động cùng hệ thống (No autostart).
-  - Nghiêm cấm tự động mở hoặc thực thi tệp nhận (No auto-open / No auto-execute), bảo vệ an toàn tối đa cho máy tính của bạn trước mã độc.
-- 🌐 **Hỗ trợ mạng linh hoạt**: Tự động khám phá thiết bị trong mạng cục bộ (LAN) và kết nối mượt mà qua mạng riêng ảo cá nhân Tailscale (cùng tailnet).
-- 🇻🇳 **Giao diện tiếng Việt chuẩn Windows**: Tích hợp trực tiếp phông chữ hệ thống Windows Segoe UI, hiển thị chữ tiếng Việt sắc nét, mượt mà.
+## Chạy thử trên hai máy
 
----
+1. Đóng bản cũ, giải nén vào thư mục riêng và mở `androp-desktop.exe` hoặc `MO_APP_TAI_DAY.bat`.
+2. Vào **Thiết bị**, chọn IP LAN/Tailscale của chính máy đó, cổng **53318**, rồi **Bật kết nối**.
+3. Máy A tạo lời mời, sao chép toàn bộ chuỗi `androp-pair-v1:...` và chuyển riêng qua kênh tin cậy.
+4. Máy B dán toàn bộ lời mời rồi gửi yêu cầu ghép. Mã PIN đơn lẻ của bản cũ không dùng cho luồng này.
+5. Máy A cuộn tới **Duyệt yêu cầu**, kiểm tra thiết bị và **Chấp thuận**. Đợi cả hai máy báo đã ghép.
+6. Thử chat hai chiều. Khi gửi file synthetic, máy nhận phải bấm **Nhận tệp**. Chỉ coi hoàn tất khi bên nhận đã xác minh/lưu xong.
+7. Đối chiếu file nguồn/đích bằng `Get-FileHash -Algorithm SHA256 <file>`.
 
-## 📥 Tải về (Download)
+LAN cần có route giữa hai máy. Tailscale cần kết nối cùng tailnet với quyền truy cập phù hợp; ứng dụng không tự thay đổi firewall hoặc tailnet.
 
-Truy cập trang [**GitHub Releases**](https://github.com/ducancdt/androp-lite/releases/latest) để tải bản phát hành mới nhất:
+## Dữ liệu và cập nhật
 
-| Tệp tải về | Định dạng | Mô tả |
-| :--- | :--- | :--- |
-| **[`androp-lite-windows-x64-v0.1.0-alpha.zip`](https://github.com/ducancdt/androp-lite/releases/latest)** | ZIP Archive | Gói nén di động đầy đủ (chứa tệp thực thi, hướng dẫn, launcher và thông cáo bản quyền) |
-| **[`androp-desktop.exe`](https://github.com/ducancdt/androp-lite/releases/latest)** | Windows EXE | Tệp thực thi độc lập x64 trực tiếp |
+Danh tính/trust được bảo vệ bằng DPAPI theo tài khoản Windows tại `%LOCALAPPDATA%\ANDropLite\network-v2`. Không copy thư mục này sang máy khác, không đưa lời mời/token vào báo cáo công khai. Cập nhật EXE không tự xóa/reset dữ liệu. Khi báo `IDENTITY_CORRUPT`, mạng bị khóa; cần giữ bản sao dữ liệu và quyết định khôi phục hoặc tạo danh tính mới có chủ đích. Tạo mới phải ghép lại.
 
----
+## Trạng thái kiểm thử và giới hạn
 
-## 🚀 Hướng dẫn sử dụng nhanh (Quick Start)
+190 test Rust PASS; fmt/check/clippy/build release PASS trên Windows build 26200, Rust 1.95.0. Trong đó 20 test runtime kiểm TLS loopback, pairing, chat, file nhiều chunk hai chiều, consent, retry, hash/no-overwrite và revoke. Kết quả local không thay cho nghiệm thu LAN/Tailscale trên hai máy thật.
 
-1. **Tải và giải nén**:
-   Tải tệp `androp-lite-windows-x64-v0.1.0-alpha.zip` và giải nén vào bất kỳ thư mục nào trên máy tính của bạn (ví dụ: `Desktop`, `D:\Apps\ANDropLite`).
-2. **Khởi chạy**:
-   Nhấp đúp vào `androp-desktop.exe` (hoặc tệp `MO_APP_TAI_DAY.bat`).
-3. **Kết nối mạng**:
-   Đảm bảo các thiết bị cần truyền tệp đang kết nối cùng một mạng Wi-Fi/Ethernet hoặc cùng chung mạng Tailscale cá nhân.
-4. **Ghép đôi thiết bị (Pairing)**:
-   - Vào tab **Thiết bị (Devices)** trên ứng dụng.
-   - Nhập mã xác nhận PIN tin cậy một lần hiển thị trên thiết bị đối tác để hoàn tất ghép đôi mTLS.
-5. **Gửi & Nhận tệp (Transfer)**:
-   - Chọn tab **Gửi (Send)**: Chọn tệp cần gửi và chọn thiết bị nhận trong danh sách đã ghép đôi.
-   - Bên nhận sẽ xuất hiện hộp thoại xác nhận nhận tệp, bấm **Đồng ý** để bắt đầu truyền dữ liệu với thanh tiến trình trực quan theo thời gian thực.
-   - Tệp sau khi nhận thành công sẽ nằm an toàn trong thư mục `Downloads/ANDrop`.
+Một file mỗi lượt; chưa hỗ trợ đầy đủ batch/folder, pause/resume và startup recovery trong luồng desktop mới. Chưa qualification file trên 4 GiB, soak, DPI/RDP, sleep/wake hoặc máy sạch. Sau mở lại cần chọn IP/bật kết nối và kiểm tra thư mục nhận. API runtime đang khác baseline đầy đủ; không khẳng định tương thích protocol-v1 với client khác.
 
----
-
-## 🔍 Kiểm tra tính toàn vẹn (SHA-256 Checksums)
-
-Đối soát mã băm SHA-256 chính thức cho bản phát hành `v0.1.0-alpha`:
-
-```text
-598ab03f7101bae9a414170eff9a2651400acffe216164c029079bcd1e15b5c3  androp-desktop.exe
-5377fde67361b367b12491948354831b61b15bdf1ac74c1f8cbcf1d75a6c4f88  androp-lite-windows-x64-v0.1.0-alpha.zip
-2119b49cff40c354c7244d5c96b0cf6be21d06f61d956a58548f7e6ddef7cee8  README.txt
-a27ed8a2e51169aeb09686bebdf63c4416c268102eddb0849178dc533badc094  THIRD_PARTY_NOTICES.md
-2fd730fffc258fe999b4e3fdfaf791c1559c3ea995317b8306cc96ff9fa603bb  BUILD_METADATA.json
-```
-
-**Cách kiểm tra bằng PowerShell trên Windows:**
-```powershell
-Get-FileHash -Algorithm SHA256 androp-desktop.exe
-```
-
----
-
-## 💻 Yêu cầu hệ thống (System Requirements)
-
-- **Hệ điều hành**: Windows 10 x64 (Build 19041 trở lên) hoặc Windows 11 x64.
-- **Quyền hạn**: Tài khoản người dùng thông thường (Standard User, không yêu cầu quyền Administrator).
-- **Phụ thuộc**: Microsoft Universal C Runtime (UCRT) và thư viện VC++ Runtime (đã tích hợp sẵn trên các bản Windows cập nhật).
-
----
-
-## 📜 Bản quyền & Giấy phép (License & Notices)
-
-- Ứng dụng ANDrop Lite © 2026 bởi **ducancdt**. Mọi quyền được bảo lưu (All rights reserved).
-- Chi tiết thông cáo bản quyền của các thư viện mã nguồn mở bên thứ ba (Rust ecosystem, egui, rustls, ...) xem tại [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+Windows x64; có thể cần Microsoft Visual C++ Runtime. Không tắt Defender/SmartScreen toàn hệ thống để chạy bản unsigned. Xem `THIRD_PARTY_NOTICES.md` để biết thông tin thư viện và giấy phép.
