@@ -36,3 +36,6 @@ include = ["livetranslate*"]
 
 [tool.setuptools.package-data]
 livetranslate = ["web/*.html"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
