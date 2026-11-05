@@ -38,3 +38,9 @@ Tài khoản thuộc máy của bạn, không phải tài khoản cloud. Đổi 
 200 kiểm thử Rust PASS; fmt/check/clippy/build release PASS trên Windows. Đã kiểm thử đăng nhập, mật khẩu sai, giả mạo/replay, đổi mật khẩu, lưu máy/cổng qua restart và truyền file thật giữa hai runtime local. Giao diện native Windows đã mở để kiểm tra bố cục. Chưa nghiệm thu LAN/Tailscale trên hai máy thật, DPI/RDP hoặc Windows sạch; không coi các mục này là PASS.
 
 Bản alpha chưa ký số. Một file mỗi lượt; batch/folder, pause/resume và khôi phục lượt truyền sau khởi động chưa hoàn chỉnh. Mất xác nhận cuối khi đăng nhập có thể cần đăng nhập lại. Không tự thay pin khi chứng chỉ thay đổi; chứng chỉ hiện có thời hạn khoảng một năm. Không cài Windows autostart/service, không tự sửa firewall/tailnet. Xem THIRD_PARTY_NOTICES.md cho inventory và license của thư viện. Windows x64, có thể cần Microsoft Visual C++ Runtime.
+
+---
+
+## Live Translate (thư mục `live-translate/`)
+
+Công cụ riêng: dịch trực tiếp YouTube / livestream / mic / âm thanh hệ thống sang tiếng Việt và đọc bằng giọng mã nguồn mở [VieNeu-TTS](https://github.com/pnnbao97/VieNeu-TTS). Chỉ cần gắn API key Gemini (hoặc OpenAI/Groq/OpenRouter/Ollama/Anthropic). Xem [live-translate/README.md](live-translate/README.md).
