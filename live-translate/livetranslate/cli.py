@@ -26,13 +26,16 @@ def build_parser() -> argparse.ArgumentParser:
             '  livetranslate --source "device:-f dshow -i audio=Stereo Mix (Realtek(R) Audio)"\n'
             "  livetranslate --source file:video.mp4 --save-srt out.srt --save-audio out.wav --no-play\n"
             "  livetranslate --source <url> --stt gemini            # Gemini nghe + dịch trong 1 lần gọi\n"
+            "  livetranslate --source <url> --stt wlk               # streaming qua server WhisperLiveKit (độ trễ thấp nhất)\n"
             "  livetranslate --source <url> --translator openai     # OpenAI/Groq/OpenRouter/Ollama\n"
         ),
     )
     p.add_argument("--source", "-s", help="URL (YouTube, Twitch, Facebook, TikTok...), 'mic', 'mic:<thiết bị>', 'device:<ffmpeg args>', 'file:<đường dẫn>'")
     p.add_argument("--source-lang", help="Mã ngôn ngữ nguồn (en, ja, ko, zh...). Bỏ trống = tự nhận dạng")
     p.add_argument("--target", "-t", dest="target_lang", help="Ngôn ngữ đích (mặc định vi)")
-    p.add_argument("--stt", choices=["whisper", "gemini", "openai"], help="Nhận dạng giọng nói (mặc định whisper offline)")
+    p.add_argument("--stt", choices=["whisper", "gemini", "openai", "wlk"], help="Nhận dạng giọng nói: whisper (offline, theo câu), gemini, openai, wlk (streaming qua server WhisperLiveKit)")
+    p.add_argument("--wlk-url", help="WebSocket của server WhisperLiveKit (mặc định ws://127.0.0.1:8000/asr)")
+    p.add_argument("--wlk-settle", type=float, dest="wlk_settle_s", help="Giây dòng cuối đứng yên để chốt câu (mặc định 1.2)")
     p.add_argument("--whisper-model", help="tiny/base/small/medium/large-v3 hoặc tên model faster-whisper (mặc định small)")
     p.add_argument("--whisper-device", help="cpu hoặc cuda")
     p.add_argument("--translator", choices=["gemini", "openai", "anthropic", "none"], help="Nhà cung cấp dịch")
@@ -67,7 +70,7 @@ def apply_args(s: Settings, a: argparse.Namespace) -> Settings:
     for key in (
         "source", "source_lang", "target_lang", "stt", "whisper_model", "whisper_device", "translator",
         "glossary", "tts", "voice", "voice_ref", "vieneu_mode", "vieneu_precision", "silence_ms",
-        "vad_threshold", "output_device", "save_srt", "save_audio", "max_queue",
+        "vad_threshold", "output_device", "save_srt", "save_audio", "max_queue", "wlk_url", "wlk_settle_s",
     ):
         v = getattr(a, key, None)
         if v is not None:

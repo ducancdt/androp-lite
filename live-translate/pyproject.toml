@@ -23,8 +23,10 @@ tts = ["vieneu>=3.8"]
 audio = ["sounddevice>=0.4.6"]
 # Tải stream YouTube, Twitch, Facebook, TikTok... (cần ffmpeg trong PATH)
 url = ["yt-dlp>=2024.1.1"]
-all = ["faster-whisper>=1.0", "vieneu>=3.8", "sounddevice>=0.4.6", "yt-dlp>=2024.1.1"]
-dev = ["pytest>=7"]
+# Client STT streaming tới server WhisperLiveKit (server cài riêng: pip install whisperlivekit)
+wlk = ["websockets>=12"]
+all = ["faster-whisper>=1.0", "vieneu>=3.8", "sounddevice>=0.4.6", "yt-dlp>=2024.1.1", "websockets>=12"]
+dev = ["pytest>=7", "websockets>=12"]
 
 [project.scripts]
 livetranslate = "livetranslate.cli:main"

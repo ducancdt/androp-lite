@@ -95,6 +95,9 @@ class Pipeline:
         self._seg_q: _DropOldestQueue = _DropOldestQueue(maxsize=max_queue)
         self._tts_q: _DropOldestQueue = _DropOldestQueue(maxsize=max_queue)
         self._stop = threading.Event()
+        self._stream_done = threading.Event()
+        self._seg_count = 0
+        self.stream_drain_s = 8.0  # chờ STT streaming xả nốt sau khi hết âm thanh
         self._threads: List[threading.Thread] = []
         self.lines: List[Line] = []
         self.dropped = 0
@@ -102,19 +105,32 @@ class Pipeline:
         self._lock = threading.Lock()
 
     # ------------------------------------------------------------------
+    @property
+    def streaming(self) -> bool:
+        """STT streaming (vd WhisperLiveKit) tự chốt câu; bỏ qua bộ cắt câu VAD."""
+        return bool(getattr(self.stt, "streaming", False))
+
     def run(self) -> None:
         """Chạy chặn đến khi nguồn kết thúc hoặc ``stop()``."""
-        workers = [
-            threading.Thread(target=self._stt_worker, name="stt-mt", daemon=True),
-            threading.Thread(target=self._tts_worker, name="tts", daemon=True),
-        ]
+        if self.streaming:
+            self.stt.start()
+            first = threading.Thread(target=self._stream_worker, name="stt-stream-mt", daemon=True)
+        else:
+            first = threading.Thread(target=self._stt_worker, name="stt-mt", daemon=True)
+        workers = [first, threading.Thread(target=self._tts_worker, name="tts", daemon=True)]
         for t in workers:
             t.start()
         self._threads = workers
         try:
-            self._ingest()
+            if self.streaming:
+                self._ingest_streaming()
+            else:
+                self._ingest()
         finally:
-            self._seg_q.put(None)
+            if self.streaming:
+                self._stream_done.set()
+            else:
+                self._seg_q.put(None)
             workers[0].join()
             self._tts_q.put(None)
             workers[1].join()
@@ -135,6 +151,42 @@ class Pipeline:
             tail = self.segmenter.flush()
             if tail is not None:
                 self._enqueue_segment(tail)
+
+    def _ingest_streaming(self) -> None:
+        for chunk in self.source_frames:
+            if self._stop.is_set():
+                break
+            self.stt.feed(chunk, SAMPLE_RATE)
+        self.stt.finish()
+
+    def _stream_worker(self) -> None:
+        """Lấy câu đã chốt từ STT streaming rồi dịch/đọc như đường thường."""
+        idle_after_done = 0.0
+        while not self._stop.is_set():
+            try:
+                line = self.stt.poll(timeout=0.2)
+            except Exception as e:
+                self.errors += 1
+                log.error("Lỗi STT streaming: %s", e)
+                if self._stream_done.is_set():
+                    return
+                time.sleep(0.5)
+                continue
+            if line is None:
+                if self._stream_done.is_set():
+                    idle_after_done += 0.2
+                    if idle_after_done >= self.stream_drain_s:
+                        return
+                continue
+            idle_after_done = 0.0
+            self._seg_count += 1
+            try:
+                self._handle_transcript(
+                    line.to_transcript(), index=self._seg_count, start=line.start, end=line.end, stt_ms=0
+                )
+            except Exception as e:
+                self.errors += 1
+                log.error("Lỗi xử lý câu #%d: %s", self._seg_count, e, exc_info=log.isEnabledFor(logging.DEBUG))
 
     def _enqueue_segment(self, seg: Segment) -> None:
         def on_drop(old):
@@ -159,10 +211,14 @@ class Pipeline:
     def _process_segment(self, seg: Segment) -> None:
         t0 = time.monotonic()
         tr: Transcript = self.stt.transcribe(seg.audio, SAMPLE_RATE)
-        t1 = time.monotonic()
+        stt_ms = int((time.monotonic() - t0) * 1000)
+        self._handle_transcript(tr, index=seg.index, start=seg.start, end=seg.end, stt_ms=stt_ms)
+
+    def _handle_transcript(self, tr: Transcript, *, index: int, start: float, end: float, stt_ms: int) -> None:
         if tr.empty:
-            log.debug("Câu #%d: không có lời", seg.index)
+            log.debug("Câu #%d: không có lời", index)
             return
+        t1 = time.monotonic()
         source = (tr.text or "").strip()
         if tr.translation is not None:
             translation = tr.translation.strip()
@@ -170,17 +226,17 @@ class Pipeline:
             translation = self.translator.translate(source, self.context)
         t2 = time.monotonic()
         if not translation:
-            log.debug("Câu #%d: bỏ qua (%r)", seg.index, source[:40])
+            log.debug("Câu #%d: bỏ qua (%r)", index, source[:40])
             return
         self.context.add(source or translation, translation)
         line = Line(
-            index=seg.index,
-            start=seg.start,
-            end=seg.end,
+            index=index,
+            start=start,
+            end=end,
             source=source,
             translation=translation,
             language=tr.language,
-            stt_ms=int((t1 - t0) * 1000),
+            stt_ms=stt_ms,
             mt_ms=int((t2 - t1) * 1000),
         )
         with self._lock:
@@ -188,7 +244,7 @@ class Pipeline:
             if len(self.lines) > 500:
                 del self.lines[: len(self.lines) - 500]
         if self.srt is not None:
-            self.srt.add(seg.start, seg.end, translation, source)
+            self.srt.add(start, end, translation, source)
         if self.on_line:
             try:
                 self.on_line(line)

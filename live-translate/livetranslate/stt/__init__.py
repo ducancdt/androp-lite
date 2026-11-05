@@ -25,6 +25,18 @@ def make_stt(s: Settings) -> SpeechToText:
         from .openai_stt import OpenAITranscribe
 
         return OpenAITranscribe(s.openai_api_key, s.openai_base_url, s.openai_stt_model, s.source_lang)
+    if kind in ("wlk", "whisperlivekit"):
+        from .streaming import WhisperLiveKitStream
+
+        # Khi dịch bằng "none", để server WLK tự dịch (cần cài wlk với extra [translation])
+        target = s.target_lang if (s.translator or "").lower() == "none" else None
+        return WhisperLiveKitStream(
+            url=s.wlk_url,
+            language=None if (s.source_lang or "auto") == "auto" else s.source_lang,
+            target_language=target,
+            api_token=s.wlk_token or None,
+            settle_s=s.wlk_settle_s,
+        )
     raise ValueError(f"STT không hỗ trợ: {s.stt}")
 
 

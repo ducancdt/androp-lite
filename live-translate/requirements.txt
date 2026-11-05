@@ -4,3 +4,4 @@ faster-whisper>=1.0
 vieneu>=3.8
 sounddevice>=0.4.6
 yt-dlp>=2024.1.1
+websockets>=12

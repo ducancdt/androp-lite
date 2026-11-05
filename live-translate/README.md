@@ -9,6 +9,7 @@ nguồn âm thanh → cắt câu (VAD) → nhận dạng (STT) → dịch bằng
 - **Dịch bằng AI tuỳ chọn**: chỉ cần gắn API key của **Gemini** (mặc định), hoặc **bất kỳ API tương thích OpenAI** (OpenAI, Groq, OpenRouter, DeepSeek, Together, Ollama/LM Studio chạy local…), hoặc **Anthropic Claude**.
 - **Giọng đọc tiếng Việt mã nguồn mở**: [VieNeu-TTS](https://github.com/pnnbao97/VieNeu-TTS) (Apache-2.0) chạy **offline trên CPU** (không cần torch), 25 giọng có sẵn ba miền, **nhân bản giọng bất kỳ** từ 3–10 giây audio mẫu.
 - **Nhận dạng giọng nói offline** bằng [faster-whisper](https://github.com/SYSTRAN/faster-whisper), hoặc để **Gemini nghe và dịch thẳng** trong một lần gọi (ít độ trễ hơn, không cần Whisper), hoặc Whisper API của OpenAI/Groq.
+- **Chế độ streaming độ trễ thấp nhất** qua server [WhisperLiveKit](https://github.com/QuentinFuxa/WhisperLiveKit) (`--stt wlk`): chữ được chốt dần trong lúc người nói đang nói, không cần chờ hết câu.
 - Phụ đề song ngữ **web overlay** (dùng làm Browser Source trong OBS), ghi **.srt** và **.wav**.
 - Mọi tầng chạy song song, tự bỏ câu cũ khi máy quá tải để độ trễ không tăng dần.
 
@@ -55,6 +56,10 @@ livetranslate --source "https://www.twitch.tv/abc" --source-lang en --voice "H�
 
 # Gemini nghe audio và dịch thẳng (1 lần gọi API, không cần Whisper)
 livetranslate --source "https://..." --stt gemini
+
+# Streaming độ trễ thấp nhất: chạy server WhisperLiveKit (cùng máy hoặc máy có GPU) rồi trỏ tới
+#   pip install whisperlivekit && wlk --model small --language en --pcm-input --port 8000
+livetranslate --source "https://..." --stt wlk --wlk-url ws://127.0.0.1:8000/asr
 
 # Dùng Groq (nhanh, rẻ) để dịch, Whisper offline để nghe
 livetranslate --source "https://..." --translator openai --model llama-3.3-70b-versatile
@@ -108,6 +113,7 @@ Liệt kê giọng VieNeu: `livetranslate --list-voices`. Giọng v3 Turbo có s
 
 | Cấu hình | Độ trễ điển hình sau khi người nói dứt câu |
 |---|---|
+| `--stt wlk` (WhisperLiveKit streaming, GPU) + Groq/Gemini + VieNeu int8 | ~1.5–3 s |
 | `--stt gemini` (Gemini nghe + dịch) + VieNeu int8 | ~2–4 s |
 | Whisper `small` + Gemini/Groq + VieNeu fp32 | ~3–6 s |
 | Whisper `medium` + bất kỳ + VieNeu | ~6–10 s (nên dùng GPU) |
@@ -121,6 +127,7 @@ livetranslate/
   sources/     URL (yt-dlp + ffmpeg, livestream HLS), file, device (ffmpeg), mic (sounddevice) → float32 16 kHz
   segmenter.py VAD năng lượng thích nghi, cắt theo im lặng / độ dài tối đa, giữ pre-roll
   stt/         faster-whisper (offline) | Gemini audio (nghe + dịch thẳng) | OpenAI-compatible /audio/transcriptions
+  stt/streaming.py  client WebSocket WhisperLiveKit: gửi PCM liên tục, chốt câu từ `lines` server trả (LineCommitter)
   translate/   Gemini | OpenAI-compatible | Anthropic — chung prompt phiên dịch, ngữ cảnh 3 câu trước, glossary
   tts/         VieNeu-TTS (preset / nhân bản giọng) | Gemini TTS | none
   player.py    hàng đợi phát sounddevice (chọn thiết bị ra), ghi WAV
@@ -139,9 +146,14 @@ pytest -q
 
 Bộ test mô phỏng STT/dịch/TTS nên không cần khóa API hay model; kiểm tra bộ cắt câu, prompt, các client API (Gemini kể cả fallback model và tắt thinking, OpenAI-compatible, Anthropic), pipeline, SRT, CLI.
 
+### Vì sao không fork WhisperLiveKit?
+
+WhisperLiveKit (11k ⭐) là phần nhận dạng streaming mạnh nhất hiện có, nhưng nó là server STT đa người dùng: không lấy luồng YouTube, không có giọng Việt, dịch bằng NLLB chứ không cắm LLM. Vì vậy live-translate giữ WLK đúng vai trò của nó (server STT, cài riêng bằng `pip install whisperlivekit`) và nói chuyện qua WebSocket `/asr` với `--pcm-input`; mọi thứ còn lại (nguồn, dịch bằng Gemini/OpenAI/Anthropic, VieNeu-TTS, OBS) nằm ở đây. Giao thức WLK: client gửi PCM s16le 16 kHz mono, server trả JSON `lines` (đã chốt, có `start`/`end` dạng `H:MM:SS.cc`) và `buffer_transcription` (chưa chốt); gửi `b""` để báo hết, server trả `ready_to_stop`.
+
 ## Giấy phép & ghi công
 
 - Mã nguồn: Apache-2.0.
+- [WhisperLiveKit](https://github.com/QuentinFuxa/WhisperLiveKit) (Apache-2.0) — server STT streaming, dùng qua `--stt wlk`.
 - [VieNeu-TTS](https://github.com/pnnbao97/VieNeu-TTS) (Apache-2.0) — giọng đọc tiếng Việt, model `pnnbao-ump/VieNeu-TTS-v3-Turbo`.
 - [faster-whisper](https://github.com/SYSTRAN/faster-whisper) (MIT), [yt-dlp](https://github.com/yt-dlp/yt-dlp) (Unlicense), [ffmpeg](https://ffmpeg.org) (LGPL/GPL), [sounddevice](https://github.com/spatialaudio/python-sounddevice) (MIT).
 - Một lựa chọn TTS Việt mã nguồn mở khác: [VietTTS](https://github.com/dangvansam/viet-tts) (code Apache-2.0 nhưng model CC BY-NC, không dùng thương mại) — chưa tích hợp.

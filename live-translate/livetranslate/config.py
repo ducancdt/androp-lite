@@ -65,6 +65,10 @@ class Settings:
     whisper_model: str = "small"
     whisper_device: str = "cpu"
     whisper_compute: str = "int8"
+    # STT streaming qua server WhisperLiveKit (wlk --pcm-input)
+    wlk_url: str = "ws://127.0.0.1:8000/asr"
+    wlk_token: str = ""
+    wlk_settle_s: float = 1.2  # dòng cuối đứng yên bao lâu (có dấu câu) thì chốt
 
     # Dịch
     translator: str = "gemini"  # gemini | openai | anthropic | none
@@ -119,6 +123,8 @@ class Settings:
         s.openai_stt_model = env("OPENAI_STT_MODEL", s.openai_stt_model)
         s.anthropic_api_key = env("ANTHROPIC_API_KEY", "")
         s.anthropic_model = env("ANTHROPIC_MODEL", s.anthropic_model)
+        s.wlk_url = env("WLK_URL", s.wlk_url)
+        s.wlk_token = env("WLK_API_TOKEN", "")
         s.target_lang = env("LT_TARGET_LANG", s.target_lang)
         s.voice = env("LT_VOICE", s.voice)
         s.gemini_tts_model = env("GEMINI_TTS_MODEL", s.gemini_tts_model)
